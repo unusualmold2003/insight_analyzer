@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Insight Synthesizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 1.5rem;
+    }
+
+    h1 {
+      color: #3a3a3a;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .card {
+      background-color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+
+    .quote {
+      font-style: italic;
+      margin-left: 1rem;
+    }
+
+    .sentiment {
+      font-weight: bold;
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+
+    .positive { background-color: #d4edda; color: #155724; }
+    .neutral  { background-color: #f8f9fa; color: #6c757d; }
+    .negative { background-color: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+
+  <h1>🧠 Gemini Insight Synthesizer</h1>
+
+  <p>Paste survey responses (one per line):</p>
+  <textarea id="responses" rows="10" placeholder="e.g.\nI love the idea of an AI that writes emails.\nPrivacy is my biggest concern."></textarea>
+
+  <input type="text" id="apiUrl" placeholder="Backend API URL (e.g. https://your-vercel-app.vercel.app)" />
+
+  <button onclick="generateInsights()">Generate Insights</button>
+
+  <div id="results"></div>
+
+  <script>
+    async function generateInsights() {
+      const responses = document.getElementById("responses").value.trim().split("\n").filter(Boolean);
+      const apiUrl = document.getElementById("apiUrl").value.trim();
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "Loading...";
+
+      try {
+        const response = await fetch("/api", {
+            method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ responses })
+        });
+
+        const data = await response.json();
+        resultsDiv.innerHTML = "";
+
+        if (Array.isArray(data)) {
+          data.forEach((card, i) => {
+            const cardDiv = document.createElement("div");
+            cardDiv.className = "card";
+
+            const sentimentClass = card.sentiment?.toLowerCase() || "neutral";
+            cardDiv.innerHTML = `
+              <h3>Theme ${i + 1}: ${card.theme}</h3>
+              ${card.quotes.map(q => `<p class="quote">"${q}"</p>`).join("")}
+              <span class="sentiment ${sentimentClass}">${card.sentiment || "neutral"}</span>
+            `;
+
+            resultsDiv.appendChild(cardDiv);
+          });
+        } else {
+          resultsDiv.innerHTML = `<p style="color: red;">Error: ${JSON.stringify(data)}</p>`;
+        }
+      } catch (err) {
+        resultsDiv.innerHTML = `<p style="color: red;">Failed to connect to backend: ${err.message}</p>`;
+      }
+    }
+  </script>
+
+</body>
+</html>
